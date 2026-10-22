@@ -13,7 +13,7 @@ This repository contains the end-to-end data pipelines, predictive models, and b
 │   ├── 02_full_pipeline.py         # Baseline LightGBM pipeline with stratified cross-validation
 │   ├── 03_nuclear_pipeline.py      # Expanded feature engineering pipeline (ratios, EXT_SOURCE combos)
 │   ├── 04_champion_pipeline.py     # Tri-Model ensemble (LightGBM + CatBoost + XGBoost)
-│   ├── 05_peak_submission.py       # Final Rank-Averaged Ensemble achieving Peak Global Rank #1 (0.80372 AUC)
+│   ├── 05_peak_submission.py       # Multi-seed ensembling and out-of-fold blending
 │   ├── boost_rank.py              # Calibration and out-of-fold blending optimizer
 │   └── verify_submission.py       # Validation and submission shape verification script
 │
@@ -29,32 +29,33 @@ This repository contains the end-to-end data pipelines, predictive models, and b
 
 ---
 
-## 1. Credit Default Risk Competition (Global Rank #1 Peak)
+## 1. Credit Default Risk Competition
 
-### Performance Highlights
-* **Peak Global Leaderboard Rank:** **#1**
-* **Best Test ROC-AUC:** **0.80372**
-* **Validation Strategy:** Leak-free 5-Fold Stratified Cross-Validation with out-of-fold probability calibration.
+### Objective & Architecture
+Development of a robust credit risk scoring system on the Home Credit Default Risk dataset, focusing on rigorous feature engineering, data anomaly resolution, and ensemble modeling under class-imbalanced conditions (~8% default rate).
 
 ### Key Engineering & Modeling Components
-1. **Domain Feature Engineering (40+ features):**
-   - **Financial Leverage Ratios:** `Credit/Income`, `Annuity/Income`, `Goods_Price/Credit`.
-   - **Loan-Term & Implied Interest Rate:** Clustered `(Credit, Annuity)` to extract standard loan durations and derived the hidden implied interest rate charged by the lender using numerical bisection.
-   - **External Bureau Aggregations:** Non-linear interactions, polynomial products, and dispersion statistics across `EXT_SOURCE_1, 2, 3`.
-   - **Repeat-Applicant Fingerprinting:** Computed historical application default tendencies strictly within training folds using Bayesian-smoothed target encoding.
+1. **Data Cleaning & Anomaly Correction:**
+   - Identified and corrected legacy placeholder anomalies (e.g., converting `DAYS_EMPLOYED = 365243` to `NaN` and creating an explicit anomaly flag to prevent skewed tree splits).
+   - Handled categorical missing values and invalid placeholders (`XNA`).
 
-2. **Model Diversity & Rank-Averaged Ensembling:**
-   - **LightGBM:** Leaf-wise split growth for deep feature interactions.
-   - **CatBoost:** Symmetric/oblivious decision trees to prevent tabular overfitting.
-   - **XGBoost:** Depth-wise histogram-based tree growth with L1/L2 shrinkage.
-   - **Ensemble Method:** Multi-seed rank averaging (`scipy.stats.rankdata`) to directly optimize ranking order and eliminate probability calibration divergence.
+2. **Domain Feature Engineering (40+ features):**
+   - **Financial Leverage Ratios:** `Credit/Income` (debt-to-income multiplier), `Annuity/Income` (repayment burden), `Goods_Price/Credit` (over-financing indicator).
+   - **Loan-Term & Implied Interest Rate:** Clustered `(Credit, Annuity)` to extract standard repayment durations and estimated borrower implied interest rates via root-finding on the annuity equation.
+   - **External Bureau Aggregations:** Non-linear interactions, polynomial products, and dispersion statistics across `EXT_SOURCE_1, 2, 3`.
+   - **Repeat-Applicant Fingerprinting:** Computed historical application tendencies strictly within training folds using Bayesian-smoothed target encoding to guarantee leak-free validation.
+
+3. **Validation & Ensemble Strategy:**
+   - **Validation:** 5-Fold Stratified Cross-Validation with strict fold isolation for all encoders and scalers.
+   - **Model Diversity:** Evaluated LightGBM (leaf-wise growth for high-order interactions), CatBoost (symmetric trees robust to tabular noise), and XGBoost.
+   - **Blending:** Multi-seed rank averaging (`scipy.stats.rankdata`) to optimize ranking order across heterogeneous model outputs.
 
 ---
 
 ## 2. Telecom Customer Churn Capstone & Business Proposal
 
 An end-to-end churn prediction framework and quantitative retention strategy for a subscription enterprise:
-* **Longitudinal Behavioral Modeling:** Tracks customer velocity across data consumption, payment regularity, and service interaction history.
+* **Longitudinal Behavioral Modeling:** Tracks customer velocity across data consumption, payment regularity, and customer service interaction history.
 * **Risk Stratification:** Segments users into Low ($P < 0.2$), Medium ($0.2 \le P < 0.6$), and High ($P \ge 0.6$) churn risk tiers.
 * **Executive Decision Proposal:** Formulates an ROI optimization framework ensuring customer retention interventions are only deployed when expected lifetime value saved exceeds total campaign cost.
 
