@@ -1,0 +1,29 @@
+# Data Files (Keep large datasets local)
+*.csv
+*.zip
+*.parquet
+*.feather
+*.pkl
+*.bin
+
+# Temporary and Scratch Files
+scratch_*.html
+*.log
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Output bundles
+competition_data/output/*.csv
+competition_data/output/*.zip
+competition_data/extra_data/
+
+catboost_info/
